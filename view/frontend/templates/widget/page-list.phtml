@@ -1,0 +1,22 @@
+<?php
+/** @var $block PageList */
+
+use Magebit\PageListWidget\Block\Widget\PageList;
+use Magebit\PageListWidget\Model\Config\Source\CmsPages;
+
+$baseUrl = $block->getBaseUrl();
+?>
+
+<h3><?= $block->escapeHtml($block->getData($block::PARAMETER_TITLE)) ?></h3>
+
+<ul>
+    <?php foreach ($block->getCmsPages() as $page): ?>
+        <?php
+        $pageLink = $baseUrl . $page[CmsPages::PAGE_VALUE];
+        $pageLabel = $page[CmsPages::PAGE_LABEL];
+        ?>
+        <li>
+            <a href="<?= $block->escapeUrl($pageLink) ?>"><?= $block->escapeHtml($pageLabel) ?></a>
+        </li>
+    <?php endforeach; ?>
+</ul>
