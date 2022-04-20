@@ -80,11 +80,15 @@ class CmsPages implements OptionSourceInterface
      */
     private function getCmsPageCollection(array $selectedPages): array
     {
-        $filters = [];
-        foreach ($selectedPages as $selectedPage) {
-            $filters[] = $this->filterBuilder->setField('identifier')->setConditionType('eq')->setValue($selectedPage)->create();
+        $filter = [];
+        if ($selectedPages) {
+            $filter[] = $this->filterBuilder
+                ->setConditionType('in')
+                ->setField('identifier')
+                ->setValue($selectedPages)
+                ->create();
         }
-        $searchCriteria = $this->searchCriteriaBuilder->addFilters($filters)->create();
+        $searchCriteria = $this->searchCriteriaBuilder->addFilters($filter)->create();
 
         try {
             return $this->pageRepository->getList($searchCriteria)->getItems();
@@ -92,5 +96,4 @@ class CmsPages implements OptionSourceInterface
             return [];
         }
     }
-
 }
