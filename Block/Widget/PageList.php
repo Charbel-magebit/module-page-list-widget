@@ -3,6 +3,7 @@
 namespace Magebit\PageListWidget\Block\Widget;
 
 use Magebit\PageListWidget\Model\Config\Source\CmsPages;
+use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Widget\Block\BlockInterface;
@@ -31,16 +32,24 @@ class PageList extends Template implements BlockInterface
     public const DISPLAY_MODE_ALL_PAGES = 'all_pages';
     public const DISPLAY_MODE_SPECIFIC_PAGES = 'specific_pages';
 
-    /**
-     * Source of cms pages
-     * @var CmsPages $_cmsPages
-     */
-    private $_cmsPages;
+    /** @var UrlInterface $urlBuilder */
+    public $urlBuilder;
 
-    public function __construct(Context $context, CmsPages $cmsPages, array $data = [])
+    /**
+     * @var CmsPages $cmsPages
+     */
+    private $cmsPages;
+
+    public function __construct(
+        Context      $context,
+        CmsPages     $cmsPages,
+        UrlInterface $urlBuilder,
+        array        $data = []
+    )
     {
         parent::__construct($context, $data);
-        $this->_cmsPages = $cmsPages;
+        $this->cmsPages = $cmsPages;
+        $this->urlBuilder = $urlBuilder;
     }
 
     /**
@@ -52,16 +61,12 @@ class PageList extends Template implements BlockInterface
     public function getCmsPages(): array
     {
         $displayMode = $this->getData(self::PARAMETER_DISPLAY_MODE);
-        $cmsPages = $this->_cmsPages->toOptionArray();
 
         if ($displayMode === self::DISPLAY_MODE_ALL_PAGES) {
-            return $cmsPages;
+            return $this->cmsPages->getPages();
         }
 
-        $selectedPageValues = explode(",", $this->getData(self::PARAMETER_SELECTED_PAGES));
-
-        return array_filter($cmsPages, function ($page) use ($selectedPageValues) {
-            return in_array($page[CmsPages::PAGE_VALUE], $selectedPageValues);
-        });
+        $selectedPageValues = explode(',', $this->getData(self::PARAMETER_SELECTED_PAGES));
+        return $this->cmsPages->getPages($selectedPageValues);
     }
 }

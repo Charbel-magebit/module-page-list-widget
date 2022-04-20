@@ -6,6 +6,7 @@ use Magento\Cms\Api\PageRepositoryInterface;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Data\OptionSourceInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Api\FilterBuilder;
 
 /**
  * Class used to get cms pages options
@@ -16,31 +17,53 @@ class CmsPages implements OptionSourceInterface
     /**
      * @var PageRepositoryInterface
      */
-    private  $_pageRepository;
+    private $pageRepository;
 
     /**
      * @var SearchCriteriaBuilder
      */
-    private  $_searchCriteriaBuilder;
+    private $searchCriteriaBuilder;
+
+    /** @var FilterBuilder */
+    private $filterBuilder;
 
     public const PAGE_VALUE = 'value';
     public const PAGE_LABEL = 'label';
 
     public function __construct(
         PageRepositoryInterface $pageRepository,
-        SearchCriteriaBuilder $searchCriteriaBuilder
-    ){
-        $this->_pageRepository= $pageRepository;
-        $this->_searchCriteriaBuilder = $searchCriteriaBuilder;
+        SearchCriteriaBuilder   $searchCriteriaBuilder,
+        FilterBuilder           $filterBuilder
+    )
+    {
+        $this->pageRepository = $pageRepository;
+        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
+        $this->filterBuilder = $filterBuilder;
+    }
+
+    /**
+     * used by widget xml as source of the options for the widget
+     */
+    public function toOptionArray(): array
+    {
+        return $this->getPages();
+    }
+
+    /**
+     * used to get a selected set of cms pages
+     */
+    public function getPages(array $selectedPages = []): array
+    {
+        $pages = $this->getCmsPageCollection($selectedPages);
+        return $this->formatPages($pages);
     }
 
     /**
      * formats cms pages data. Keeps page title and identifier only
      */
-    public function toOptionArray(): array
+    private function formatPages(array $pages): array
     {
         $optionArray = [];
-        $pages = $this->getCmsPageCollection();
         foreach ($pages as $page) {
             $optionArray[] = [
                 self::PAGE_VALUE => $page->getIdentifier(),
@@ -55,12 +78,16 @@ class CmsPages implements OptionSourceInterface
      * Gets all cms pages data from page repository
      * if error occurs returns empty array
      */
-    private function getCmsPageCollection(): array
+    private function getCmsPageCollection(array $selectedPages): array
     {
-        $searchCriteria = $this->_searchCriteriaBuilder->create();
+        $filters = [];
+        foreach ($selectedPages as $selectedPage) {
+            $filters[] = $this->filterBuilder->setField('identifier')->setConditionType('eq')->setValue($selectedPage)->create();
+        }
+        $searchCriteria = $this->searchCriteriaBuilder->addFilters($filters)->create();
 
         try {
-            return $this->_pageRepository->getList($searchCriteria)->getItems();
+            return $this->pageRepository->getList($searchCriteria)->getItems();
         } catch (LocalizedException $e) {
             return [];
         }
